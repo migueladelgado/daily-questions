@@ -1,0 +1,11 @@
+{
+  "name": "daily-questions-sms",
+  "version": "1.0.0",
+  "description": "Sending questions via sms",
+  "author": "Miguel Delgado",
+  "dependencies": {
+    "aws-xray-sdk": "^3.2.0",
+    "axios": "^0.20.0",
+    "mongoose": "^5.10.5"
+  }
+}
