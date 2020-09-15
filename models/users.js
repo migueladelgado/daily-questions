@@ -1,8 +1,10 @@
 var mongoose = require('mongoose');
 
 var QuestionSchema = new mongoose.Schema({
-    questionNumber: Number,
-    answered: Boolean
+    questionId: String,
+    answered: Boolean,
+    givenAnswer: String, 
+    correct: Boolean
 });
 
 var UserSchema = new mongoose.Schema({

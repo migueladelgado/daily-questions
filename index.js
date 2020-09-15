@@ -1,25 +1,39 @@
-const connectToMongo = require('./db/db');
+const db = require('./db/db');
 const utils = require('./utils/utils');
 const smsService = require('./services/smsService');
 
 
 module.exports.handler = (event, context, done) => {
-    
-    connectToMongo().then(
+
+    if(event && !(event.SUPER_SECRET_KEY === process.env.SUPER_SECRET_KEY)){
+        done(null, utils.createLambdaResponse('NOTHING TO SEE HERE!'));
+        return;
+    }
+
+    db.connectToMongo().then(
         () => {
-            smsService.handleRequest(event).then( results => {
-                done(null, utils.createLambdaResponse(results))
-                return;
-            }).catch( err => {
-                done(null, utils.createLambdaResponse(err))
-                return;
+            smsService.handleRequest(event).then(results => {
+                db.closeConnection().then(() => {
+                    done(null, utils.createLambdaResponse(results))
+                    return;
+                })
+
+            }).catch(err => {
+                db.closeConnection().then(() => {
+                    done(null, utils.createLambdaResponse(err))
+                    console.log('error', JSON.stringify(err))
+                    return;
+                })
             });
         }
     ).catch(
         err => {
             console.log('ERROR! => ', err)
-            done(null, utils.createLambdaResponse(err));
-            return;
+            db.closeConnection().then(() => {
+                done(null, utils.createLambdaResponse(err));
+                console.log('connection error:', JSON.stringify(err))
+                return;
+            })
         }
     )
 }

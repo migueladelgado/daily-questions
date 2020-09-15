@@ -1,27 +1,31 @@
-const axios = require('axios').default;
-const UserModel = require('../models/users')
+const mongoose = require('mongoose');
+const questionService = require('./questionService');
+const userService = require('./userService');
+const axios = require('axios');
 
-//get all users that should get sms messages
-const getAuthorizedUsers = () => {
-    let filter = {
-        active: true,
-        sendSMS: true,
-        verified: true
-    };
-    return UserModel.find(filter);
+const EVENT_TYPE = {
+    GET_QUESTION: 'GetQuestion',
+    PUT_QUESTION: 'PutQuestion'
 }
 
-const getRandomQuestion = async () => {
-    return new Promise((resolve, reject) => {
-        resolve('some random question')
-    });
+const creatSMSMessage = (userId, questionId) => {
+    return (
+        'Click below to see your question!' +
+        '\n' +
+        `${process.env.BASE_CLIENT_URL}/${userId}/${questionId}`
+    )
 }
 
 const mapToRequests = async user => {
+    let question = await questionService.getUnansweredQuestion(user);
+    //if no unanswered questions dont send text
+    if(!question.length)
+        return Promise.resolve();
+    let text = creatSMSMessage(user._id, question[0]._id);
     let body = {
         from: process.env.FC_FROM_NUMBER,
         to: user.phone,
-        text: await getRandomQuestion()
+        text
     }
 
     let options = {
@@ -36,14 +40,37 @@ const mapToRequests = async user => {
 
 //get active users from db to send messages
 const sendSMS = async () => {
-    let users = await getAuthorizedUsers();
+    let users = await userService.getAvailableUsers();
     let promises = users.map(mapToRequests);
-    return Promise.all(promises);
+    if(!promises.length)
+        return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        Promise.all(promises).then(
+            () => {
+                resolve(true)
+            }
+        ).catch(
+            err => reject(err)
+        )
+    })
+}
+
+const handleEvent = async event => {
+    if(!event.type)
+        return Promise.resolve();
+    
+    switch(event.type){
+        case EVENT_TYPE.GET_QUESTION:
+            return questionService.getQuestionById(event.data.questionId);
+        case EVENT_TYPE.PUT_QUESTION:
+            return userService.putQuestionToUser(event.data);
+        default:
+    }
 }
 
 const handleRequest = async event => {
-    if(event && event.body)
-        return;
+    if(event)
+        return handleEvent(event);
     return sendSMS();
 }
 
