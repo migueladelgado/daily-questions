@@ -56,8 +56,9 @@ const sendSMS = async () => {
 }
 
 const handleEvent = async event => {
+    event = JSON.parse(event.body);
     if(!event.type)
-        return Promise.resolve();
+        return Promise.resolve('NO EVENT TYPE SUPPLIED');
     
     switch(event.type){
         case EVENT_TYPE.GET_QUESTION:
@@ -69,7 +70,7 @@ const handleEvent = async event => {
 }
 
 const handleRequest = async event => {
-    if(event)
+    if(event && event.body)
         return handleEvent(event);
     return sendSMS();
 }

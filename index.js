@@ -5,7 +5,7 @@ const smsService = require('./services/smsService');
 
 module.exports.handler = (event, context, done) => {
 
-    if(event && !(event.SUPER_SECRET_KEY === process.env.SUPER_SECRET_KEY)){
+    if(event && !utils.isValidLambdaRequest(event)){
         done(null, utils.createLambdaResponse('NOTHING TO SEE HERE!'));
         return;
     }
